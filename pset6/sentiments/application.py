@@ -18,9 +18,13 @@ def search():
         return redirect(url_for("index"))
 
     # get screen_name's tweets
+    # clean user nickname
+    if screen_name.startswith('@'):
+        screen_name = screen_name[1:]
     tweets = helpers.get_user_timeline(screen_name, count=100)
 
     # TODO
+    # analyze tweets for emotions
     analizator = Analyzer()
     positive, negative, neutral = analizator.analyze(tweets)
 
