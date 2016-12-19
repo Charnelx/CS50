@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <table border="1">
+    <caption>Transactions history</caption>
+    <tr>
+        <th>Type</th>
+        <th>Symbol</th>
+        <th>Price</th>
+        <th>Amount</th>
+        <th>Date</th>
+    </tr>
+    {%  if results %}
+        {% for row in results %}
+            <tr>
+                <td>{{ row.type }}</td>
+                <td>{{ row.symbol }}</td>
+                <td>{{ row.price }}</td>
+                <td>{{ row.amount }}</td>
+                <td>{{ row.date }}</td>
+            </tr>
+        {% endfor %}
+    {% endif %}
+    </table>
+{% endblock %}

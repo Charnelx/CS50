@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    {%  if error %}
+        <p><strong>{{ error }}</strong></p>
+    {% elif info %}
+        <p>{{ info }}</p>
+    {% endif %}
+    <table border="1">
+        <caption><strong>Actual stocks info</strong></caption>
+        <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+        </tr>
+        {% if current_stocks %}
+            {% for symbol in current_stocks %}
+            <tr>
+                <th>{{ symbol.symbol }}</th>
+                <th>{{ symbol.price }}</th>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </table>
+    <form action="{{ url_for('sell') }}" method="post">
+            <span>Symbol/Amount</span>
+            <select name='symb'>
+                {% if options %}
+                    {% for symb in options.keys() %}
+                        <option value="{{ symb }}">{{ symb }} - {{ options[symb] }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+            <p><b>Amount of shares to sell:</b><br>
+            <input type="text" name="sell_amount" size="20">
+            <div class="form-group">
+                <button class="btn btn-default" type="submit">Sell</button>
+            </div>
+    </form>
+{% endblock %}

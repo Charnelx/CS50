@@ -6,8 +6,8 @@ import socket
 from twython import Twython
 from twython import TwythonAuthError, TwythonError, TwythonRateLimitError
 
-API_KEY = ''
-API_SECRET = ''
+API_KEY = 'mbqydIz8kC4by75od3FSYaXwz'
+API_SECRET = 'WdJhH63QizMsjAbuuB5jwDZ80y8gYzVeQ4jPkIxlRWA67kEj54'
 
 def chart(positive, negative, neutral):
     """Return a pie chart for specified sentiments as HTML."""

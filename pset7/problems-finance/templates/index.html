@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <table border="1">
+        <caption><strong>General information</strong></caption>
+    <tr>
+        <th>Symbol</th>
+        <th>Shares sum</th>
+        <th>Shares cost</th>
+        <th>Shares value</th>
+        <th>Current shares cost</th>
+        <th>Current shares value</th>
+    </tr>
+    {%  if results %}
+        {% for symbol in results %}
+            <tr>
+                <td>{{ symbol }}</td>
+                <td>{{ results[symbol].amount }}</td>
+                <td>{{ results[symbol].buy_cost }}</td>
+                <td>{{ results[symbol].paid_value }}</td>
+                <td>{{ results[symbol].current_cost }}</td>
+                <td>{{ results[symbol].current_value }}</td>
+            </tr>
+        {% endfor %}
+    {% endif %}
+    </table>
+{% endblock %}

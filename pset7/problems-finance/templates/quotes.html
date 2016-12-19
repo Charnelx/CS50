@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log In
+{% endblock %}
+
+{% block main %}
+    <table border="1">
+    <caption>Stock data</caption>
+    <tr>
+        <th>Symbol</th>
+        <th>Name</th>
+        <th>Price</th>
+    </tr>
+    {%  if results %}
+        {% for row in results %}
+            <tr><td>{{ row.symbol }}</td><td>{{ row.name }}</td><td>{{ row.price }}</td></tr>
+        {% endfor %}
+    {% endif %}
+    </table>
+{% endblock %}
