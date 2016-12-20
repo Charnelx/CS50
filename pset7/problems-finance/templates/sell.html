@@ -5,12 +5,18 @@
 {% endblock %}
 
 {% block main %}
-    {%  if error %}
-        <p><strong>{{ error }}</strong></p>
-    {% elif info %}
-        <p>{{ info }}</p>
+    {%  if errors %}
+        {%  for error in errors %}
+            <div class="alert alert-danger">
+              <strong>Error: </strong>{{ error }}
+            </div>
+        {% endfor %}
+    {% elif message %}
+        <div class="alert alert-success">
+          <strong>{{ message }}</strong>
+        </div>
     {% endif %}
-    <table border="1">
+    <table class="table">
         <caption><strong>Actual stocks info</strong></caption>
         <tr>
             <th>Symbol</th>
@@ -26,16 +32,20 @@
         {% endif %}
     </table>
     <form action="{{ url_for('sell') }}" method="post">
-            <span>Symbol/Amount</span>
-            <select name='symb'>
-                {% if options %}
-                    {% for symb in options.keys() %}
-                        <option value="{{ symb }}">{{ symb }} - {{ options[symb] }}</option>
-                    {% endfor %}
-                {% endif %}
-            </select>
-            <p><b>Amount of shares to sell:</b><br>
-            <input type="text" name="sell_amount" size="20">
+            <div class="form-group">
+                <label for="sel1">Symbol/Amount</label>
+                <select class="form-control" id="sel1" name='symb'>
+                    {% if options %}
+                        {% for symb in options.keys() %}
+                            <option value="{{ symb }}">{{ symb }} - {{ options[symb] }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+
+                <label for="sell_amount">Amount of shares to sell:</label>
+                <input class="form-control" type="text" name="sell_amount" size="20">
+            </div>
+
             <div class="form-group">
                 <button class="btn btn-default" type="submit">Sell</button>
             </div>

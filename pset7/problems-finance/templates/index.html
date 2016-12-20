@@ -5,11 +5,16 @@
 {% endblock %}
 
 {% block main %}
-    <table border="1">
+    {% if balance %}
+        <div class="alert alert-info">
+          <strong>Current balance: </strong>{{'%0.2f'| format(balance|float)}}
+        </div>
+    {% endif %}
+    <table class="table">
         <caption><strong>General information</strong></caption>
     <tr>
         <th>Symbol</th>
-        <th>Shares sum</th>
+        <th>Shares amount</th>
         <th>Shares cost</th>
         <th>Shares value</th>
         <th>Current shares cost</th>
@@ -20,8 +25,8 @@
             <tr>
                 <td>{{ symbol }}</td>
                 <td>{{ results[symbol].amount }}</td>
-                <td>{{ results[symbol].buy_cost }}</td>
-                <td>{{ results[symbol].paid_value }}</td>
+                <td>{{'%0.2f'| format(results[symbol].buy_cost|float)}}</td>
+                <td>{{'%0.2f'| format(results[symbol].paid_value|float)}}</td>
                 <td>{{ results[symbol].current_cost }}</td>
                 <td>{{ results[symbol].current_value }}</td>
             </tr>

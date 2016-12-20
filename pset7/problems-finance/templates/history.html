@@ -5,8 +5,8 @@
 {% endblock %}
 
 {% block main %}
-    <table border="1">
-    <caption>Transactions history</caption>
+    <table class="table">
+    <h2>Transactions history</h2>
     <tr>
         <th>Type</th>
         <th>Symbol</th>
@@ -16,7 +16,7 @@
     </tr>
     {%  if results %}
         {% for row in results %}
-            <tr>
+            <tr class="{% if row.type == 'BUY' %}success{% else %}danger{% endif %}">
                 <td>{{ row.type }}</td>
                 <td>{{ row.symbol }}</td>
                 <td>{{ row.price }}</td>

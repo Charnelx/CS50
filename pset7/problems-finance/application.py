@@ -1,4 +1,3 @@
-# from cs50 import SQL
 import sqlite3
 from flask import Flask, flash, redirect, render_template, request, session, url_for, g
 from flask_session import Session
@@ -29,9 +28,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# configure CS50 Library to use SQLite database
-# db = SQL("sqlite:///finance.db")
-
+# database name
 DATABASE = 'finance.db'
 
 def get_db():
@@ -46,15 +43,18 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+# db queries wrapper
 def query_db(query, *args, one=False):
-    print(query, args)
+    # uncomment for debug purpose
+    # print(query, args)
+
     conn = get_db()
     cur = conn.execute(query, (args))
     conn.commit()
 
     rv = cur.fetchall()
     cur.close()
-    # conn.close()
+
     return (rv[0] if rv else None) if one else rv
 
 @app.route("/", methods=["GET"])
@@ -62,24 +62,23 @@ def query_db(query, *args, one=False):
 def index():
     user_id = session["user_id"]
 
-    response = query_db("SELECT symbol, SUM(amount), SUM(total) from transactions GROUP BY symbol")
-    print(response)
+    response = query_db("SELECT symbol, SUM(amount), SUM(total) from transactions WHERE user_id = ? GROUP BY symbol", user_id)
+    balance = query_db("SELECT cash from users WHERE id = ?", user_id, one=True)[0]
+
     if response:
         symb_dict = dict()
         for symb in response:
-            symb_dict[symb[0]] = {'amount': int(symb[1]), 'buy_cost': float(symb[2])/int(symb[1]), 'paid_value': symb[2],
-                                  'current_cost': 0, 'current_value': 0}
+            if int(symb[1]) != 0:
+                symb_dict[symb[0]] = {'amount': int(symb[1]), 'buy_cost': float(symb[2])/int(symb[1]), 'paid_value': symb[2],
+                                      'current_cost': 0, 'current_value': 0}
 
-        current_symb_cost = dict()
-        for symb in symb_dict.keys():
-            data = lookup(symb)
-            symb_dict[data['symbol']]['current_cost'] = data['price']
-            symb_dict[data['symbol']]['current_value'] = float(data['price']) * symb_dict[data['symbol']]['amount']
+            for symb in symb_dict.keys():
+                data = lookup(symb)
+                symb_dict[data['symbol']]['current_cost'] = data['price']
+                symb_dict[data['symbol']]['current_value'] = float(data['price']) * symb_dict[data['symbol']]['amount']
 
-        # print(symb_dict)
-        return render_template('index.html', results=symb_dict)
-
-    return apology("TODO")
+            return render_template('index.html', results=symb_dict, balance=balance)
+    return render_template('index.html', balance=balance)
 
 @app.route("/buy", methods=["GET", "POST"])
 @login_required
@@ -88,10 +87,14 @@ def buy():
     if request.method == 'GET':
         return render_template('buy.html')
     elif request.method == 'POST':
+        errors = []
         if not request.form.get("stock_symb"):
-            return render_template('buy_html', error='Forgot to type stock symbol?')
+            errors.append('Forgot to type stock symbol?')
         elif not request.form.get("amount"):
-            return render_template('buy_html', error='Forgot to type amount to buy?')
+            errors.append('Forgot to type amount to buy?')
+
+        if len(errors) > 0:
+            return render_template('buy.html', errors=errors)
 
         symb = request.form.get("stock_symb")
         amount = request.form.get("amount")
@@ -99,7 +102,7 @@ def buy():
         try:
             amount = int(amount)
         except:
-            return render_template('buy_html', error='Does you enter a valid amount?')
+            return render_template('buy_html', errors=['Does you enter a valid amount?'])
 
         result = lookup(request.form.get("stock_symb").upper())
 
@@ -111,13 +114,14 @@ def buy():
             withdraw = price * amount
 
             if withdraw > balance:
-                return render_template('buy.html', error='Not enough money available. Your cash: {0};Cash needed: {1}'.format(
+                return render_template('buy.html', errors=['Not enough money available. Your cash: {0};Cash needed: {1}'.format(
                     balance,
                     withdraw
-                ))
+                )])
             else:
                 new_balance = balance - withdraw
 
+                # atomic operation
                 try:
                     timestamp = str(datetime.today().timestamp())
 
@@ -134,13 +138,10 @@ def buy():
                     return render_template('buy.html', info='You bought it!')
 
                 except:
-                    render_template('buy.html', error='Error occurred while making a transaction. Try again later.')
+                    render_template('buy.html', errors=['Error occurred while making a transaction. Try again later.'])
         else:
             return render_template('buy.html',
-                                   error='Entered stock symbol ({0}) not found'.format(request.form.get("stock_symb")))
-
-
-    return apology("TODO")
+                                   errors=['Entered stock symbol ({0}) not found'.format(request.form.get("stock_symb"))])
 
 @app.route("/history")
 @login_required
@@ -159,10 +160,10 @@ def history():
         transaction_dict['price'] = price
         transaction_dict['amount'] = amount
         transaction_dict['date'] = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
         result.append(transaction_dict)
 
     return render_template('history.html', results=result)
-    # return apology("TODO")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -216,16 +217,18 @@ def quote():
     if request.method == 'GET':
         return render_template('quote.html')
     elif request.method == 'POST':
+        errors = []
         if not request.form.get("stock_symb"):
-            return render_template('quote.html', error='Do you forgot to write stock symbol?')
+            errors.append('Do you forgot to write stock symbol?')
 
         result = [lookup(request.form.get("stock_symb").upper())]
 
-        if result:
+        if result and len(errors) == 0:
             return render_template('quotes.html', results=result)
         else:
-            return render_template('quote.html', error='Entered stock symbol ({0}) not found'.format(request.form.get("stock_symb")))
-    return apology("TODO")
+            errors.append('Entered stock symbol ({0}) not found'.format(request.form.get("stock_symb")))
+
+    return render_template('quote.html', errors=errors)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -269,7 +272,11 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock."""
-    response = query_db("SELECT symbol, SUM(amount), SUM(total) from transactions GROUP BY symbol")
+    user_id = session["user_id"]
+    current_stocks = None
+    symb_dict = dict()
+
+    response = query_db("SELECT symbol, SUM(amount), SUM(total) from transactions WHERE user_id = ? GROUP BY symbol", user_id)
     if response:
         symb_dict = dict()
         for symb in response:
@@ -283,34 +290,43 @@ def sell():
 
     if request.method == 'POST':
 
+        errors = []
+        sell_symbol = ''
+        sell_amount = 0
+
         if not request.form.get("sell_amount"):
-            return render_template('sell.html', error='Need to specify sell amount',
-                                   current_stocks=current_stocks,
-                                   options=symb_dict)
+            errors.append('Need to specify sell amount')
+
         if not request.form.get("symb"):
-            return render_template('sell.html', error='Need to chose shares symbol',
-                                   current_stocks=current_stocks,
-                                   options=symb_dict)
+            errors.append('Need to chose shares symbol')
+
+        try:
+            sell_symbol = request.form.get("symb")
+        except:
+            errors.append('Need to specify symbol')
+
+        if sell_symbol not in symb_dict:
+            errors.append('Unknown share symbol')
 
         try:
             sell_amount = int(request.form.get("sell_amount"))
         except:
-            return render_template('sell.html', error='Only digits available in amount field',
-                                   current_stocks=current_stocks,
-                                   options=symb_dict)
-        sell_symbol = request.form.get("symb")
+            errors.append('Only digits available in amount field')
 
-        if sell_symbol not in symb_dict:
-            return render_template('sell.html', error='Unknown share symbol',
-                                   current_stocks=current_stocks,
-                                   options=symb_dict)
+        try:
+            tmp = sell_amount > symb_dict[sell_symbol]
+            if tmp or int(sell_amount) <= 0:
+                errors.append('Cant sell more than you have')
+        except:
+            errors.append('No symbol to chose')
 
-        if sell_amount > symb_dict[sell_symbol] or int(sell_amount) < 0:
-            return render_template('sell.html', error='Cant sell more than you have',
+
+        if len(errors) > 0:
+            return render_template('sell.html', errors=errors,
                                    current_stocks=current_stocks,
                                    options=symb_dict)
         else:
-            new_amount = symb_dict[sell_symbol] - sell_amount
+            # new_amount = symb_dict[sell_symbol] - sell_amount
             price = float(lookup(sell_symbol)['price'])
             add_balance = sell_amount * price
 
@@ -328,10 +344,13 @@ def sell():
                      add_balance,
                      new_balance,
                      timestamp)
-            return redirect('sell')
+            return redirect('sell?info=Success')
     elif request.method == 'GET':
-        return render_template('sell.html', current_stocks=current_stocks, options=symb_dict)
-    return apology("TODO")
+        message = None
+        if request.args.get('info'):
+            message = request.args.get('info')
+
+        return render_template('sell.html', current_stocks=current_stocks, options=symb_dict, message=message)
 
 if __name__ == '__main__':
     app.run(debug = True)
